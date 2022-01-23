@@ -1,4 +1,6 @@
 import React from 'react';
+import AppBar from "react-toolbox/lib/app_bar";
+import store from "../store/store";
 
 class LabHeader extends React.Component {
 
@@ -6,12 +8,21 @@ class LabHeader extends React.Component {
         super(props);
     }
 
+    logout = () => {
+        store.dispatch({type: 'login', value: {login: false, username: ""}});
+        sessionStorage.removeItem('token');
+        sessionStorage.removeItem('refreshToken');
+    }
+
     render() {
+        let title = this.props.author + ', ' + this.props.group + ', V-' + this.props.variant;
         return (
-            <div className="lab-header">
-                <p className="header-author">{this.props.author}, {this.props.group}</p>
-                <p className="header-variant">{this.props.variant}</p>
-            </div>
+            <AppBar
+                title={title}
+                // flat
+                rightIcon={store.getState().login && store.getState().login != null ? "logout" : ""}
+                onRightIconClick={this.logout}>
+            </AppBar>
         )
     }
 }

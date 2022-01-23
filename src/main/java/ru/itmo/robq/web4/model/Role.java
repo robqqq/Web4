@@ -15,11 +15,12 @@ import java.util.Objects;
 @Setter
 @NoArgsConstructor
 @ToString
+@Table(name="roles")
 public class Role {
 
     @Id
     @GeneratedValue
-    private long id;
+    private Long id;
 
     @Enumerated(EnumType.STRING)
     private UserRole roleName;

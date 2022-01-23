@@ -1,9 +1,9 @@
 export function register(login, password) {
-    return getResponse('/api/users/register', {username: login, password: password, roles: []}, 'POST', false)
+    return getResponse('/users/register', {username: login, password: password, roles: []}, 'POST', false)
 }
 
 export function login(login, password) {
-    return getResponse('/api/users/login', {username: login, password: password}, 'POST', false)
+    return getResponse('/users/login', {username: login, password: password}, 'POST', false)
 }
 
 export function getAll() {
@@ -33,7 +33,7 @@ export function clear() {
 
 function getResponse(url = '', data = null, method='GET', tokenNeeded = true) {
     let token = sessionStorage.getItem("token")
-    let httpHeaders
+    let httpHeaders;
     if(tokenNeeded && token && token !== 'null'){
         httpHeaders = {
             'Content-type': 'application/json',
@@ -46,9 +46,7 @@ function getResponse(url = '', data = null, method='GET', tokenNeeded = true) {
             'Accept' : 'application/json'
         };
     }
-    let body = {}
     if(method === 'POST') {
-        body = data
         return fetch(url, {
             method: method, // *GET, POST, PUT, DELETE, etc.
             headers: httpHeaders,

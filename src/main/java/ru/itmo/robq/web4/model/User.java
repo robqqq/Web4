@@ -17,6 +17,8 @@ import java.util.Objects;
 @Setter
 @NoArgsConstructor
 @ToString
+@Table(name="users")
+
 public class User {
 
     @Id

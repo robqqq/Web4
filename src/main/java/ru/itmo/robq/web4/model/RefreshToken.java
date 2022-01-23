@@ -14,6 +14,7 @@ import java.util.Objects;
 @Setter
 @NoArgsConstructor
 @ToString
+@Table(name = "tokens")
 public class RefreshToken {
 
     @Id

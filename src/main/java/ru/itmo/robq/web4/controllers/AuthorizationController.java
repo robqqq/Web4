@@ -9,11 +9,14 @@ import org.springframework.security.authentication.UsernamePasswordAuthenticatio
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
 import ru.itmo.robq.web4.data.RefreshTokenRepository;
+import ru.itmo.robq.web4.data.RoleRepository;
 import ru.itmo.robq.web4.data.UserRepository;
 import ru.itmo.robq.web4.exceptions.ValidationException;
 import ru.itmo.robq.web4.model.RefreshToken;
+import ru.itmo.robq.web4.model.Role;
 import ru.itmo.robq.web4.model.User;
 import ru.itmo.robq.web4.network.*;
 import ru.itmo.robq.web4.security.JwtTokenService;
@@ -34,6 +37,8 @@ public class AuthorizationController {
     private final UserRepository userRepo;
     private final RefreshTokenRepository refreshTokenRepo;
     private final UserValidator userValidator;
+    private final PasswordEncoder passwordEncoder;
+    private final RoleRepository roleRepo;
 
     private final String TOKEN_TYPE = "Bearer";
 
@@ -41,12 +46,16 @@ public class AuthorizationController {
                                    AuthenticationManager authenticationManager,
                                    UserRepository userRepo,
                                    RefreshTokenRepository refreshTokenRepo,
-                                   UserValidator userValidator) {
+                                   UserValidator userValidator,
+                                   PasswordEncoder passwordEncoder,
+                                   RoleRepository roleRepo) {
         this.authService = authService;
         this.authenticationManager = authenticationManager;
         this.userRepo = userRepo;
         this.refreshTokenRepo = refreshTokenRepo;
         this.userValidator = userValidator;
+        this.passwordEncoder = passwordEncoder;
+        this.roleRepo = roleRepo;
     }
 
     private Optional<String> createRefreshToken(Long userId) {
@@ -75,6 +84,17 @@ public class AuthorizationController {
         return createRefreshToken(userId);
     }
 
+    private User saveUser(User user) {
+        String pwd = user.getPassword();
+        user.setPassword(passwordEncoder.encode(pwd));
+        Set<Role> rolePersistSet = user.getRoleSet().stream()
+                .map(rt -> roleRepo.findByRoleName(rt.getRoleName()))
+                .collect(Collectors.toSet());
+        user.setRoleSet(rolePersistSet);
+        user = userRepo.save(user);
+        return user;
+    }
+
     @PostMapping("/login")
     public ResponseEntity<?> login(@RequestBody LoginRequest req) {
         try {
@@ -94,16 +114,16 @@ public class AuthorizationController {
 
             Optional<String> refreshTokenOptional = updateRefreshToken(userDetails.getId());
             if (!refreshTokenOptional.isPresent()) {
-                return ResponseEntity.badRequest().body("User not found");
+                return ResponseEntity.badRequest().body(new MessageResponse("User not found"));
             }
             return ResponseEntity.status(HttpStatus.CREATED).body(new JwtResponse(accessToken, TOKEN_TYPE,
                     refreshTokenOptional.get(), userDetails.getId(), userDetails.getUsername(), roles));
         } catch (ValidationException e) {
-            return ResponseEntity.badRequest().body(e.getMessage());
+            return ResponseEntity.badRequest().body(new MessageResponse(e.getMessage()));
         } catch (BadCredentialsException e) {
-            return ResponseEntity.badRequest().body("Invalid username or password");
+            return ResponseEntity.badRequest().body(new MessageResponse("Invalid username or password"));
         } catch (Exception e) {
-            return ResponseEntity.internalServerError().body(e.getMessage());
+            return ResponseEntity.internalServerError().body(new MessageResponse(e.getMessage()));
         }
     }
 
@@ -113,14 +133,14 @@ public class AuthorizationController {
         try {
             userValidator.validate(user);
             if (userRepo.findByUsername(user.getUsername()).isPresent()) {
-                return ResponseEntity.badRequest().body("User with this username already exists");
+                return ResponseEntity.badRequest().body(new MessageResponse("User with this username already exists"));
             }
             user.addRole(UserRole.ROLE_USER);
-            return ResponseEntity.status(HttpStatus.CREATED).body(userRepo.save(user));
+            return ResponseEntity.status(HttpStatus.CREATED).body(this.saveUser(user));
         } catch (ValidationException e) {
-            return ResponseEntity.badRequest().body(e.getMessage());
+            return ResponseEntity.badRequest().body(new MessageResponse(e.getMessage()));
         } catch (Exception e) {
-            return ResponseEntity.internalServerError().body(e.getMessage());
+            return ResponseEntity.internalServerError().body(new MessageResponse(e.getMessage()));
         }
     }
 
@@ -129,19 +149,19 @@ public class AuthorizationController {
         try {
             RefreshToken refreshToken = refreshTokenRepo.findByRefreshToken(req.getRefreshToken());
             if (refreshToken == null) {
-                return ResponseEntity.badRequest().body("Token not found");
+                return ResponseEntity.badRequest().body(new MessageResponse("Token not found"));
             }
             User user = refreshToken.getUser();
             Optional<String> optionalRT = updateRefreshToken(user.getUid());
             if (!optionalRT.isPresent()) {
-                return ResponseEntity.badRequest().body("User is not present in database");
+                return ResponseEntity.badRequest().body(new MessageResponse("User is not present in database"));
             }
             CustomUserDetails customUserDetails = CustomUserDetails.build(user);
             String accessToken = authService.createToken(customUserDetails);
 
             return ResponseEntity.status(HttpStatus.CREATED).body(new RefreshResponse(accessToken, optionalRT.get(), TOKEN_TYPE));
         } catch (Exception e) {
-            return ResponseEntity.internalServerError().body(e.getMessage());
+            return ResponseEntity.internalServerError().body(new MessageResponse(e.getMessage()));
         }
     }
 }

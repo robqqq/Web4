@@ -1,4 +1,4 @@
-var path = require('path');
+const path = require('path');
 
 module.exports = {
     entry: './src/main/js/index.js',
@@ -27,7 +27,18 @@ module.exports = {
             },
             {
                 test: /\.css$/,
-                use: ['style-loader', 'css-loader']
+                use: [
+                    "style-loader",
+                    {
+                        loader: "css-loader",
+                        options: {
+                            modules: true,
+                            sourceMap: true,
+                            importLoaders: 1,
+                        }
+                    },
+                    "postcss-loader" // has separate config, see postcss.config.js nearby
+                ]
             },
             {
                 test: /\.(png|jpg|jpeg|gif)$/,

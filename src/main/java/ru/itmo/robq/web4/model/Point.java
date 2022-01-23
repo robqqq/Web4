@@ -1,5 +1,6 @@
 package ru.itmo.robq.web4.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
@@ -7,6 +8,7 @@ import lombok.ToString;
 import org.hibernate.Hibernate;
 
 import javax.persistence.*;
+import java.io.Serializable;
 import java.util.Objects;
 
 @Entity
@@ -14,8 +16,12 @@ import java.util.Objects;
 @Setter
 @NoArgsConstructor
 @ToString
-public class Point {
+@Table(name = "points")
+public class Point implements Serializable {
 
+    private static final long serialVersionUID = -3185873326989486872L;
+
+    @JsonIgnore
     @Id
     @GeneratedValue
     private Long id;
@@ -32,6 +38,7 @@ public class Point {
     @Column(nullable = false)
     private Boolean result;
 
+    @JsonIgnore
     @ManyToOne
     @JoinColumn(name = "user_uid", referencedColumnName = "uid")
     private User user;
