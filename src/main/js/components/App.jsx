@@ -8,9 +8,13 @@ import Snackbar from "react-toolbox/lib/snackbar";
 class App extends React.Component {
 
     componentDidMount() {
-        store.subscribe(() => {
+        this.unsubscribe =  store.subscribe(() => {
             this.setState({reduxState: store.getState()});
         });
+    }
+
+    componentWillUnmount() {
+        this.unsubscribe();
     }
 
     hideSnackbar = () => {

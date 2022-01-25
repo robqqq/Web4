@@ -41,13 +41,33 @@ const columns = [
 ]
 
 class PointTable extends React.Component {
+
+    state = {
+        points: []
+    }
+
+    constructor(props) {
+        super(props);
+    }
+
+    componentDidMount() {
+        this.setState({points: store.getState().points});
+        this.unsubscribe = store.subscribe(() => {
+            this.setState({points: store.getState().points});
+        });
+    }
+
+    componentWillUnmount() {
+        this.unsubscribe();
+    }
+
     render() {
         return (
             <div className='table' style={{width: '90%', marginLeft: 'auto', marginRight: 'auto'}}>
                 <DataTable
                     className='point-table'
                     columns={columns}
-                    data={store.getState().points}
+                    data={this.state.points}
                     noDataComponent={null}
                     customStyles={tableStyles}/>
             </div>
